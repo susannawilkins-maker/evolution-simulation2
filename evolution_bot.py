@@ -133,7 +133,36 @@ class EvolutionSimulationBot:
             alleles = sorted([offspring_allele1, offspring_allele2], key=lambda x: (x.lower(), x.islower()))
             offspring_genotypes[trait] = tuple(alleles)
         return offspring_genotypes
-    
+        def apply_custom_mutation(self, individual_id: str, trait: str, new_allele: str) -> str:
+        """Apply a custom mutation to a specific individual in a specific generation."""
+        if individual_id not in self.population:
+            return f"Error: Individual {individual_id} not found!"
+        
+        if trait not in self.trait_definitions:
+            return f"Error: Trait {trait} not defined!"
+        
+        mutant = self.population[individual_id]
+        old_allele1, old_allele2 = mutant.genotypes[trait]
+        
+        if random.choice([True, False]):
+            mutant.genotypes[trait] = (new_allele, old_allele2)
+        else:
+            mutant.genotypes[trait] = (old_allele1, new_allele)
+        
+        mutant.phenotypes = self._calculate_phenotypes(mutant.genotypes)
+        mutant.has_mutation = True
+        mutant.survival_rate = 0.75
+        
+        self.mutation_event = {
+            'individual': mutant.id,
+            'trait': trait,
+            'old_genotype': f"{old_allele1}{old_allele2}",
+            'new_genotype': f"{mutant.genotypes[trait][0]}{mutant.genotypes[trait][1]}",
+            'habitat': self.habitat
+        }
+        
+        return f"Custom mutation applied to {individual_id}: {trait} mutation to {new_allele}"
+
     def apply_beneficial_mutation(self) -> str:
         f1_offspring = [ind for ind in self.population.values() if ind.generation == self.generation and ind.parents is not None]
         if not f1_offspring:
