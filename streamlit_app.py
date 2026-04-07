@@ -92,7 +92,36 @@ template_df = pd.DataFrame(template_data)
 csv = template_df.to_csv(index=False)
 st.download_button(label="Download CSV Template", data=csv, file_name="population_template.csv", mime="text/csv")
 
-st.header("5. Run Generation")
+st.header("5. Configure Custom Mutation (Optional)")
+st.markdown("**Leave blank to use automatic random mutation**")
+
+use_custom_mutation = st.checkbox("Use custom mutation for Generation 1?")
+
+custom_mutation_info = None
+if use_custom_mutation:
+    col1, col2 = st.columns(2)
+    with col1:
+        mutation_generation = st.number_input("Which generation to apply mutation?", min_value=1, max_value=10, value=1)
+    with col2:
+        mutation_individual = st.text_input("Individual ID to mutate (e.g., G1_Offspring1):", "")
+    
+    mutation_trait = st.selectbox("Which trait to mutate?", list(bot.trait_definitions.keys()) if bot.trait_definitions else ["No traits defined"])
+    mutation_new_allele = st.text_input("New mutation allele (e.g., W*):", "")
+    
+    if st.button("Set Custom Mutation"):
+        if mutation_generation and mutation_individual and mutation_trait and mutation_new_allele:
+            custom_mutation_info = {
+                'generation': mutation_generation,
+                'individual_id': mutation_individual,
+                'trait': mutation_trait,
+                'new_allele': mutation_new_allele
+            }
+            st.success(f"Custom mutation set! Will apply to {mutation_individual} in Generation {mutation_generation}")
+            st.session_state.custom_mutation = custom_mutation_info
+        else:
+            st.error("Fill in all fields!")
+
+st.header("6. Run Generation")
 if st.button("Run Generation"):
     if not bot.trait_definitions:
         st.error("Define traits first!")
@@ -100,10 +129,19 @@ if st.button("Run Generation"):
         st.error("Need at least 2 individuals!")
     else:
         st.write(bot.random_mating())
-        st.write(bot.apply_beneficial_mutation())
+        
+        if use_custom_mutation and hasattr(st.session_state, 'custom_mutation'):
+            custom_mut = st.session_state.custom_mutation
+            if custom_mut['generation'] == bot.generation:
+                st.write(bot.apply_custom_mutation(custom_mut['individual_id'], custom_mut['trait'], custom_mut['new_allele']))
+            else:
+                st.write(bot.apply_beneficial_mutation())
+        else:
+            st.write(bot.apply_beneficial_mutation())
+        
         st.write(bot.apply_survival_filtering())
 
-st.header("6. Results")
+st.header("7. Results")
 
 col1, col2 = st.columns(2)
 
@@ -150,4 +188,5 @@ if bot.mutation_event:
     
     csv_mutation = mutation_df.to_csv(index=False)
     st.download_button(label="Download Mutation Details as CSV", data=csv_mutation, file_name="mutation_details.csv", mime="text/csv")
+
 
