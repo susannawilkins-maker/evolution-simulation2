@@ -39,15 +39,18 @@ if uploaded_file is not None:
         st.dataframe(df)
         
         if st.button("Load Population from CSV"):
-            for idx, row in df.iterrows():
-                individual_id = row['ID']
-                genotypes = {}
-                for trait in bot.trait_definitions.keys():
-                    allele1 = row[f'{trait}_allele1']
-                    allele2 = row[f'{trait}_allele2']
-                    genotypes[trait] = (allele1, allele2)
-                bot.add_individual(individual_id, genotypes)
-            st.success(f"Loaded {len(df)} individuals!")
+            if not bot.trait_definitions:
+                st.error("Define traits first!")
+            else:
+                for idx, row in df.iterrows():
+                    individual_id = row['ID']
+                    genotypes = {}
+                    for trait in bot.trait_definitions.keys():
+                        allele1 = row[f'{trait}_allele1']
+                        allele2 = row[f'{trait}_allele2']
+                        genotypes[trait] = (allele1, allele2)
+                    bot.add_individual(individual_id, genotypes)
+                st.success(f"Loaded {len(df)} individuals!")
     except Exception as e:
         st.error(f"Error reading CSV: {e}")
 
@@ -65,10 +68,12 @@ if bot.trait_definitions:
         genotypes_dict[trait] = (a1, a2)
 
 if st.button("Add Individual"):
-    if genotypes_dict:
+    if not bot.trait_definitions:
+        st.error("Define traits first!")
+    elif genotypes_dict:
         st.write(bot.add_individual(individual_id, genotypes_dict))
     else:
-        st.warning("Define traits first!")
+        st.warning("Select alleles!")
 
 st.info(f"Population: {len(bot.population)}")
 
@@ -76,7 +81,7 @@ if st.button("Show Population"):
     st.write(bot.get_population_summary())
 
 st.header("4. Download CSV Template")
-st.markdown("Download this template to fill in your 20 individuals:")
+st.markdown("Download template to fill in your individuals:")
 
 template_data = {
     'ID': ['Fox1', 'Fox2', 'Fox3'],
@@ -89,7 +94,9 @@ st.download_button(label="Download CSV Template", data=csv, file_name="populatio
 
 st.header("5. Run Generation")
 if st.button("Run Generation"):
-    if len(bot.population) < 2:
+    if not bot.trait_definitions:
+        st.error("Define traits first!")
+    elif len(bot.population) < 2:
         st.error("Need at least 2 individuals!")
     else:
         st.write(bot.random_mating())
