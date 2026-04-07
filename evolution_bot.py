@@ -133,8 +133,8 @@ class EvolutionSimulationBot:
             alleles = sorted([offspring_allele1, offspring_allele2], key=lambda x: (x.lower(), x.islower()))
             offspring_genotypes[trait] = tuple(alleles)
         return offspring_genotypes
-        def apply_custom_mutation(self, individual_id: str, trait: str, new_allele: str) -> str:
-        """Apply a custom mutation to a specific individual in a specific generation."""
+    
+    def apply_custom_mutation(self, individual_id: str, trait: str, new_allele: str) -> str:
         if individual_id not in self.population:
             return f"Error: Individual {individual_id} not found!"
         
@@ -161,8 +161,8 @@ class EvolutionSimulationBot:
             'habitat': self.habitat
         }
         
-        return f"Custom mutation applied to {individual_id}: {trait} mutation to {new_allele}"
-
+        return f"Custom mutation applied to {individual_id}: {trait} changed to {new_allele}"
+    
     def apply_beneficial_mutation(self) -> str:
         f1_offspring = [ind for ind in self.population.values() if ind.generation == self.generation and ind.parents is not None]
         if not f1_offspring:
@@ -190,7 +190,7 @@ class EvolutionSimulationBot:
             'habitat': self.habitat
         }
         
-        return f"Mutation applied to {mutant.id}: {trait_to_mutate}"
+        return f"Random mutation applied to {mutant.id}: {trait_to_mutate}"
     
     def apply_survival_filtering(self) -> str:
         self.survival_records = []
@@ -216,4 +216,5 @@ class EvolutionSimulationBot:
         
         self.population_history[self.generation] = survived_count
         return f"Survival filtering: {survived_count} survived, {died_count} died"
+
 
