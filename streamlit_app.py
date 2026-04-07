@@ -104,16 +104,50 @@ if st.button("Run Generation"):
         st.write(bot.apply_survival_filtering())
 
 st.header("6. Results")
+
 col1, col2 = st.columns(2)
+
 with col1:
-    if st.button("Show After Survival"):
-        st.write(bot.get_population_summary())
+    if st.button("Show Population as Table"):
+        population_data = []
+        for ind_id, individual in sorted(bot.population.items()):
+            row = {'ID': ind_id, 'Status': 'Alive' if individual.is_alive else 'Dead', 'Generation': individual.generation}
+            for trait, (allele1, allele2) in individual.genotypes.items():
+                row[f'{trait}_genotype'] = f"{allele1}{allele2}"
+            for trait, phenotype in individual.phenotypes.items():
+                row[f'{trait}_phenotype'] = phenotype
+            population_data.append(row)
+        
+        results_df = pd.DataFrame(population_data)
+        st.dataframe(results_df)
+        
+        csv_results = results_df.to_csv(index=False)
+        st.download_button(label="Download Results as CSV", data=csv_results, file_name="population_results.csv", mime="text/csv")
+
 with col2:
     if st.button("Show History"):
         if bot.population_history:
+            history_data = []
             for gen, size in sorted(bot.population_history.items()):
-                st.write(f"Gen {gen}: {size}")
+                history_data.append({'Generation': gen, 'Population Size': size})
+            history_df = pd.DataFrame(history_data)
+            st.dataframe(history_df)
+            
+            csv_history = history_df.to_csv(index=False)
+            st.download_button(label="Download History as CSV", data=csv_history, file_name="population_history.csv", mime="text/csv")
 
 if bot.mutation_event:
     st.header("Mutation Details")
-    st.json(bot.mutation_event)
+    mutation_data = {
+        'Individual': bot.mutation_event['individual'],
+        'Trait': bot.mutation_event['trait'],
+        'Old Genotype': bot.mutation_event['old_genotype'],
+        'New Genotype': bot.mutation_event['new_genotype'],
+        'Habitat': bot.mutation_event['habitat']
+    }
+    mutation_df = pd.DataFrame([mutation_data])
+    st.dataframe(mutation_df)
+    
+    csv_mutation = mutation_df.to_csv(index=False)
+    st.download_button(label="Download Mutation Details as CSV", data=csv_mutation, file_name="mutation_details.csv", mime="text/csv")
+
