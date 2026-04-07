@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from evolution_bot import EvolutionSimulationBot
 
 st.set_page_config(page_title="Evolution Simulation", layout="wide")
@@ -26,7 +27,31 @@ if st.button("Add Trait"):
 
 st.info(f"Traits: {list(bot.trait_definitions.keys())}")
 
-st.header("3. Add Individuals")
+st.header("3. Add Starting Population")
+
+st.subheader("Option A: Upload CSV File")
+uploaded_file = st.file_uploader("Upload population CSV", type="csv")
+
+if uploaded_file is not None:
+    try:
+        df = pd.read_csv(uploaded_file)
+        st.write("Preview of data:")
+        st.dataframe(df)
+        
+        if st.button("Load Population from CSV"):
+            for idx, row in df.iterrows():
+                individual_id = row['ID']
+                genotypes = {}
+                for trait in bot.trait_definitions.keys():
+                    allele1 = row[f'{trait}_allele1']
+                    allele2 = row[f'{trait}_allele2']
+                    genotypes[trait] = (allele1, allele2)
+                bot.add_individual(individual_id, genotypes)
+            st.success(f"Loaded {len(df)} individuals!")
+    except Exception as e:
+        st.error(f"Error reading CSV: {e}")
+
+st.subheader("Option B: Add Individuals Manually")
 individual_id = st.text_input("Individual ID:", "Fox1")
 genotypes_dict = {}
 
@@ -50,7 +75,19 @@ st.info(f"Population: {len(bot.population)}")
 if st.button("Show Population"):
     st.write(bot.get_population_summary())
 
-st.header("4. Run Generation")
+st.header("4. Download CSV Template")
+st.markdown("Download this template to fill in your 20 individuals:")
+
+template_data = {
+    'ID': ['Fox1', 'Fox2', 'Fox3'],
+    'fur_color_allele1': ['W', 'w', 'W'],
+    'fur_color_allele2': ['w', 'w', 'W']
+}
+template_df = pd.DataFrame(template_data)
+csv = template_df.to_csv(index=False)
+st.download_button(label="Download CSV Template", data=csv, file_name="population_template.csv", mime="text/csv")
+
+st.header("5. Run Generation")
 if st.button("Run Generation"):
     if len(bot.population) < 2:
         st.error("Need at least 2 individuals!")
@@ -59,7 +96,7 @@ if st.button("Run Generation"):
         st.write(bot.apply_beneficial_mutation())
         st.write(bot.apply_survival_filtering())
 
-st.header("5. Results")
+st.header("6. Results")
 col1, col2 = st.columns(2)
 with col1:
     if st.button("Show After Survival"):
