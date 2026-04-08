@@ -95,17 +95,16 @@ st.download_button(label="Download CSV Template", data=csv, file_name="populatio
 st.header("5. Configure Custom Mutation (Optional)")
 st.markdown("**Leave blank to use automatic random mutation**")
 
-use_custom_mutation = st.checkbox("Use custom mutation for Generation 1?")
+use_custom_mutation = st.checkbox("Use custom mutation?")
 
-custom_mutation_info = None
 if use_custom_mutation:
     col1, col2 = st.columns(2)
     with col1:
-        mutation_generation = st.number_input("Which generation to apply mutation?", min_value=1, max_value=10, value=1)
+        mutation_generation = st.number_input("Which generation?", min_value=1, max_value=10, value=1)
     with col2:
-        mutation_individual = st.text_input("Individual ID to mutate (e.g., G1_Offspring1):", "")
+        mutation_individual = st.text_input("Individual ID (e.g., G1_Offspring1):", "")
     
-    mutation_trait = st.selectbox("Which trait to mutate?", list(bot.trait_definitions.keys()) if bot.trait_definitions else ["No traits defined"])
+    mutation_trait = st.selectbox("Which trait?", list(bot.trait_definitions.keys()) if bot.trait_definitions else ["No traits defined"])
     mutation_new_allele = st.text_input("New mutation allele (e.g., W*):", "")
     
     if st.button("Set Custom Mutation"):
@@ -116,7 +115,7 @@ if use_custom_mutation:
                 'trait': mutation_trait,
                 'new_allele': mutation_new_allele
             }
-            st.success(f"Custom mutation set! Will apply to {mutation_individual} in Generation {mutation_generation}")
+            st.success(f"Custom mutation set for Gen {mutation_generation}!")
             st.session_state.custom_mutation = custom_mutation_info
         else:
             st.error("Fill in all fields!")
@@ -130,13 +129,14 @@ if st.button("Run Generation"):
     else:
         st.write(bot.random_mating())
         
-        if use_custom_mutation and hasattr(st.session_state, 'custom_mutation'):
+        mutation_applied = False
+        if hasattr(st.session_state, 'custom_mutation'):
             custom_mut = st.session_state.custom_mutation
             if custom_mut['generation'] == bot.generation:
                 st.write(bot.apply_custom_mutation(custom_mut['individual_id'], custom_mut['trait'], custom_mut['new_allele']))
-            else:
-                st.write(bot.apply_beneficial_mutation())
-        else:
+                mutation_applied = True
+        
+        if not mutation_applied:
             st.write(bot.apply_beneficial_mutation())
         
         st.write(bot.apply_survival_filtering())
@@ -147,46 +147,90 @@ col1, col2 = st.columns(2)
 
 with col1:
     if st.button("Show Population as Table"):
-        population_data = []
-        for ind_id, individual in sorted(bot.population.items()):
-            row = {'ID': ind_id, 'Status': 'Alive' if individual.is_alive else 'Dead', 'Generation': individual.generation}
-            for trait, (allele1, allele2) in individual.genotypes.items():
-                row[f'{trait}_genotype'] = f"{allele1}{allele2}"
-            for trait, phenotype in individual.phenotypes.items():
-                row[f'{trait}_phenotype'] = phenotype
-            population_data.append(row)
-        
-        results_df = pd.DataFrame(population_data)
-        st.dataframe(results_df)
-        
-        csv_results = results_df.to_csv(index=False)
-        st.download_button(label="Download Results as CSV", data=csv_results, file_name="population_results.csv", mime="text/csv")
+        try:
+            if not bot.population:
+                st.warning("No population data yet!")
+            else:
+                population_data = []
+                for ind_id in sorted(bot.population.keys()):
+                    individual = bot.population[ind_id]
+                    row = {
+                        'ID': ind_id,
+                        'Status': 'Alive' if individual.is_alive else 'Dead',
+                        'Generation': individual.generation
+                    }
+                    
+                    for trait in bot.trait_definitions.keys():
+                        if trait in individual.genotypes:
+                            allele1, allele2 = individual.genotypes[trait]
+                            row[f'{trait}_genotype'] = f"{allele1}{allele2}"
+                        if trait in individual.phenotypes:
+                            row[f'{trait}_phenotype'] = individual.phenotypes[trait]
+                    
+                    population_data.append(row)
+                
+                if population_data:
+                    results_df = pd.DataFrame(population_data)
+                    st.dataframe(results_df, use_container_width=True)
+                    
+                    csv_results = results_df.to_csv(index=False)
+                    st.download_button(
+                        label="Download Results as CSV",
+                        data=csv_results,
+                        file_name="population_results.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.warning("No population data to display!")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
 
 with col2:
     if st.button("Show History"):
-        if bot.population_history:
-            history_data = []
-            for gen, size in sorted(bot.population_history.items()):
-                history_data.append({'Generation': gen, 'Population Size': size})
-            history_df = pd.DataFrame(history_data)
-            st.dataframe(history_df)
-            
-            csv_history = history_df.to_csv(index=False)
-            st.download_button(label="Download History as CSV", data=csv_history, file_name="population_history.csv", mime="text/csv")
+        try:
+            if not bot.population_history:
+                st.warning("No history yet! Run a generation first.")
+            else:
+                history_data = []
+                for gen in sorted(bot.population_history.keys()):
+                    size = bot.population_history[gen]
+                    history_data.append({'Generation': gen, 'Population Size': size})
+                
+                if history_data:
+                    history_df = pd.DataFrame(history_data)
+                    st.dataframe(history_df, use_container_width=True)
+                    
+                    csv_history = history_df.to_csv(index=False)
+                    st.download_button(
+                        label="Download History as CSV",
+                        data=csv_history,
+                        file_name="population_history.csv",
+                        mime="text/csv"
+                    )
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
 
 if bot.mutation_event:
     st.header("Mutation Details")
-    mutation_data = {
-        'Individual': bot.mutation_event['individual'],
-        'Trait': bot.mutation_event['trait'],
-        'Old Genotype': bot.mutation_event['old_genotype'],
-        'New Genotype': bot.mutation_event['new_genotype'],
-        'Habitat': bot.mutation_event['habitat']
-    }
-    mutation_df = pd.DataFrame([mutation_data])
-    st.dataframe(mutation_df)
-    
-    csv_mutation = mutation_df.to_csv(index=False)
-    st.download_button(label="Download Mutation Details as CSV", data=csv_mutation, file_name="mutation_details.csv", mime="text/csv")
+    try:
+        mutation_data = {
+            'Individual': bot.mutation_event.get('individual', 'N/A'),
+            'Trait': bot.mutation_event.get('trait', 'N/A'),
+            'Old Genotype': bot.mutation_event.get('old_genotype', 'N/A'),
+            'New Genotype': bot.mutation_event.get('new_genotype', 'N/A'),
+            'Habitat': bot.mutation_event.get('habitat', 'N/A')
+        }
+        mutation_df = pd.DataFrame([mutation_data])
+        st.dataframe(mutation_df, use_container_width=True)
+        
+        csv_mutation = mutation_df.to_csv(index=False)
+        st.download_button(
+            label="Download Mutation Details as CSV",
+            data=csv_mutation,
+            file_name="mutation_details.csv",
+            mime="text/csv"
+        )
+    except Exception as e:
+        st.error(f"Error: {str(e)}")
 
 
