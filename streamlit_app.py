@@ -152,12 +152,14 @@ with col1:
                 st.warning("No population data yet!")
             else:
                 population_data = []
-                for ind_id in sorted(bot.population.keys()):
+                all_keys = list(bot.population.keys())
+                
+                for ind_id in all_keys:
                     individual = bot.population[ind_id]
                     row = {
                         'ID': str(ind_id),
                         'Status': 'Alive' if individual.is_alive else 'Dead',
-                        'Generation': int(individual.generation)
+                        'Generation': str(individual.generation)
                     }
                     
                     for trait in bot.trait_definitions.keys():
@@ -183,7 +185,7 @@ with col1:
                 else:
                     st.warning("No population data to display!")
         except Exception as e:
-            st.error(f"Error displaying table: {str(e)}")
+            st.error(f"Error: {str(e)}")
 
 with col2:
     if st.button("Show History"):
@@ -194,7 +196,7 @@ with col2:
                 history_data = []
                 for gen in sorted(bot.population_history.keys()):
                     size = bot.population_history[gen]
-                    history_data.append({'Generation': int(gen), 'Population Size': int(size)})
+                    history_data.append({'Generation': str(gen), 'Population Size': str(size)})
                 
                 if history_data:
                     history_df = pd.DataFrame(history_data)
@@ -208,7 +210,7 @@ with col2:
                         mime="text/csv"
                     )
         except Exception as e:
-            st.error(f"Error displaying history: {str(e)}")
+            st.error(f"Error: {str(e)}")
 
 if bot.mutation_event:
     st.header("Mutation Details")
@@ -231,7 +233,8 @@ if bot.mutation_event:
             mime="text/csv"
         )
     except Exception as e:
-        st.error(f"Error displaying mutation: {str(e)}")
+        st.error(f"Error: {str(e)}")
+
 
 
 
