@@ -155,9 +155,9 @@ with col1:
                 for ind_id in sorted(bot.population.keys()):
                     individual = bot.population[ind_id]
                     row = {
-                        'ID': ind_id,
+                        'ID': str(ind_id),
                         'Status': 'Alive' if individual.is_alive else 'Dead',
-                        'Generation': individual.generation
+                        'Generation': int(individual.generation)
                     }
                     
                     for trait in bot.trait_definitions.keys():
@@ -183,7 +183,7 @@ with col1:
                 else:
                     st.warning("No population data to display!")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Error displaying table: {str(e)}")
 
 with col2:
     if st.button("Show History"):
@@ -194,7 +194,7 @@ with col2:
                 history_data = []
                 for gen in sorted(bot.population_history.keys()):
                     size = bot.population_history[gen]
-                    history_data.append({'Generation': gen, 'Population Size': size})
+                    history_data.append({'Generation': int(gen), 'Population Size': int(size)})
                 
                 if history_data:
                     history_df = pd.DataFrame(history_data)
@@ -208,17 +208,17 @@ with col2:
                         mime="text/csv"
                     )
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Error displaying history: {str(e)}")
 
 if bot.mutation_event:
     st.header("Mutation Details")
     try:
         mutation_data = {
-            'Individual': bot.mutation_event.get('individual', 'N/A'),
-            'Trait': bot.mutation_event.get('trait', 'N/A'),
-            'Old Genotype': bot.mutation_event.get('old_genotype', 'N/A'),
-            'New Genotype': bot.mutation_event.get('new_genotype', 'N/A'),
-            'Habitat': bot.mutation_event.get('habitat', 'N/A')
+            'Individual': str(bot.mutation_event.get('individual', 'N/A')),
+            'Trait': str(bot.mutation_event.get('trait', 'N/A')),
+            'Old Genotype': str(bot.mutation_event.get('old_genotype', 'N/A')),
+            'New Genotype': str(bot.mutation_event.get('new_genotype', 'N/A')),
+            'Habitat': str(bot.mutation_event.get('habitat', 'N/A'))
         }
         mutation_df = pd.DataFrame([mutation_data])
         st.dataframe(mutation_df, use_container_width=True)
@@ -231,6 +231,7 @@ if bot.mutation_event:
             mime="text/csv"
         )
     except Exception as e:
-        st.error(f"Error: {str(e)}")
+        st.error(f"Error displaying mutation: {str(e)}")
+
 
 
