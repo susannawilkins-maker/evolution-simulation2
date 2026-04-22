@@ -67,7 +67,7 @@ class EvolutionSimulationBot:
         for trait, (allele1, allele2) in genotypes.items():
             trait_def = self.trait_definitions[trait]
             dom_allele = trait_def['dominant_allele']
-            if allele1 == dom_allele or allele2 == dom_allele:
+            if str(allele1) == dom_allele or str(allele2) == dom_allele:
                 phenotypes[trait] = trait_def['dominant_phenotype']
             else:
                 phenotypes[trait] = trait_def['recessive_phenotype']
@@ -79,7 +79,7 @@ class EvolutionSimulationBot:
         summary = f"\nGeneration {self.generation}\n"
         summary += f"Total: {len(self.population)}\n"
         summary += f"Alive: {sum(1 for ind in self.population.values() if ind.is_alive)}\n\n"
-        for ind_id, individual in sorted(self.population.items()):
+        for ind_id, individual in self.population.items():
             status = "ALIVE" if individual.is_alive else "DEAD"
             summary += f"{ind_id} ({status})\n"
             for trait, (allele1, allele2) in individual.genotypes.items():
@@ -128,10 +128,20 @@ class EvolutionSimulationBot:
         for trait in self.trait_definitions.keys():
             p1_allele1, p1_allele2 = parent1.genotypes[trait]
             p2_allele1, p2_allele2 = parent2.genotypes[trait]
+            
             offspring_allele1 = random.choice([p1_allele1, p1_allele2])
             offspring_allele2 = random.choice([p2_allele1, p2_allele2])
-            alleles = sorted([offspring_allele1, offspring_allele2], key=lambda x: (x.lower(), x.islower()))
-            offspring_genotypes[trait] = tuple(alleles)
+            
+            a1_str = str(offspring_allele1)
+            a2_str = str(offspring_allele2)
+            
+            if a1_str.lower() < a2_str.lower():
+                alleles = (a1_str, a2_str)
+            else:
+                alleles = (a2_str, a1_str)
+            
+            offspring_genotypes[trait] = alleles
+        
         return offspring_genotypes
     
     def apply_custom_mutation(self, individual_id: str, trait: str, new_allele: str) -> str:
@@ -145,9 +155,9 @@ class EvolutionSimulationBot:
         old_allele1, old_allele2 = mutant.genotypes[trait]
         
         if random.choice([True, False]):
-            mutant.genotypes[trait] = (new_allele, old_allele2)
+            mutant.genotypes[trait] = (str(new_allele), str(old_allele2))
         else:
-            mutant.genotypes[trait] = (old_allele1, new_allele)
+            mutant.genotypes[trait] = (str(old_allele1), str(new_allele))
         
         mutant.phenotypes = self._calculate_phenotypes(mutant.genotypes)
         mutant.has_mutation = True
@@ -174,9 +184,9 @@ class EvolutionSimulationBot:
         mutation_allele = f"{trait_to_mutate[0].upper()}*"
         
         if random.choice([True, False]):
-            mutant.genotypes[trait_to_mutate] = (mutation_allele, old_allele2)
+            mutant.genotypes[trait_to_mutate] = (str(mutation_allele), str(old_allele2))
         else:
-            mutant.genotypes[trait_to_mutate] = (old_allele1, mutation_allele)
+            mutant.genotypes[trait_to_mutate] = (str(old_allele1), str(mutation_allele))
         
         mutant.phenotypes = self._calculate_phenotypes(mutant.genotypes)
         mutant.has_mutation = True
